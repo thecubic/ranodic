@@ -11,6 +11,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  SSID: pants
+  PASSWORD: pants
+  TARGET: riscv32imac-unknown-none-elf
 
 jobs:
   rust-checks:
