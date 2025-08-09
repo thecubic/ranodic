@@ -1,0 +1,137 @@
+[package]
+edition = "2021"
+name = "ranodic"
+version = "0.1.0"
+
+[[bin]]
+name = "ranodic"
+path = "./src/bin/main.rs"
+
+[dependencies]
+cfg-if = "1.0.1"
+critical-section = "1.2.0"
+defmt = "1.0.1"
+embassy-net = { version = "0.7.0", features = [
+  "dhcpv4",
+  "medium-ethernet",
+  "tcp",
+  "udp",
+] }
+embassy-time = { version = "0.4.0", features = [] }
+embedded-graphics = "0.8.1"
+embedded-io = { version = "0.6.1", features = [] }
+embedded-io-async = { version = "0.6.1", features = [] }
+smart-leds = "0.4.0"
+smart-leds-trait = "0.3.1"
+static_cell = { version = "2.1.0", features = ["nightly"] }
+
+[dependencies.embassy-executor]
+# git = "https://github.com/embassy-rs/embassy"
+version = "0.7.0"
+features = ["task-arena-size-65536"]
+
+[dependencies.esp-hal-smartled]
+git = "https://github.com/esp-rs/esp-hal-community"
+
+## ESP-HAL
+
+[dependencies.esp-hal]
+# git = "https://github.com/esp-rs/esp-hal"
+version = "1.0.0-rc.0"
+features = ["unstable"]
+
+
+[dependencies.esp-metadata-generated]
+version = "0.1.0"
+
+[dependencies.esp-bootloader-esp-idf]
+version = "0.2.0"
+
+[dependencies.esp-println]
+version = "0.15.0"
+
+[dependencies.esp-backtrace]
+version = "0.17.0"
+features = ["exception-handler", "panic-handler"]
+
+[dependencies.esp-alloc]
+version = "0.8.0"
+features = []
+
+[dependencies.esp-wifi]
+version = "0.15.0"
+features = ["builtin-scheduler", "esp-alloc", "smoltcp", "wifi"]
+
+[dependencies.esp-hal-embassy]
+version = "0.9.0"
+features = ["executors"]
+
+[dependencies.esp-hub75]
+git = "https://github.com/liebman/esp-hub75"
+
+[dependencies.smoltcp]
+version = "0.12.0"
+default-features = false
+features = [
+  "medium-ethernet",
+  "multicast",
+  "proto-dhcpv4",
+  "proto-dns",
+  "proto-ipv4",
+  "socket-dns",
+  "socket-icmp",
+  "socket-raw",
+  "socket-tcp",
+  "socket-udp",
+]
+
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false
+
+
+[features]
+default = ["esp32c6", "defmt"]
+esp32c6 = [
+  "esp-backtrace/esp32c6",
+  "esp-bootloader-esp-idf/esp32c6",
+  "esp-hal/esp32c6",
+  "esp-hal-embassy/esp32c6",
+  "esp-hal-smartled/esp32c6",
+  "esp-hub75/esp32c6",
+  "esp-metadata-generated/esp32c6",
+  "esp-println/esp32c6",
+  "esp-wifi/esp32c6",
+  "esp-hub75/defmt",
+]
+defmt = [
+  "embassy-executor/defmt",
+  "embassy-net/defmt",
+  "embassy-time/defmt",
+  "embedded-graphics/defmt",
+  "embedded-io/defmt-03",
+  "embedded-io-async/defmt-03",
+  "esp-alloc/defmt",
+  "esp-backtrace/defmt",
+  "esp-println/defmt-espflash",
+  "esp-hal/defmt",
+  "esp-hal-embassy/defmt",
+  "esp-hal-smartled/defmt",
+  "esp-hub75/defmt",
+  "esp-wifi/defmt",
+  "smoltcp/defmt",
+]
+# don't care
+esp32 = []
+esp32c3 = []
+esp32h2 = []
+esp32s2 = []
+esp32s3 = []
