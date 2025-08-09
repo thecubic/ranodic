@@ -116,39 +116,31 @@ async fn main(spawner: embassy_executor::Spawner) {
     {
         // init smart led
         // technically an IR remote control *IS* a PWM LED
-        let rmt: Rmt<'_, esp_hal::Async> = {
-            let frequency: Rate = {
-                cfg_if::cfg_if! {
-                    if #[cfg(feature = "esp32h2")] {
-                        Rate::from_mhz(32)
-                    } else {
-                        Rate::from_mhz(80)
-                    }
-                }
-            };
-            Rmt::new(peripherals.RMT, frequency)
-        }
-        .expect("Failed to initialize RMT")
-        .into_async();
+        #[cfg(feature = "esp32h2")]
+        let frequency = Rate::from_mhz(32);
+        #[cfg(not(feature = "esp32h2"))]
+        let frequency = Rate::from_mhz(80);
+
+        let rmt: Rmt<'_, esp_hal::Async> = Rmt::new(peripherals.RMT, frequency)
+            .expect("Failed to initialize RMT")
+            .into_async();
 
         let rmt_channel = rmt.channel0;
         let rmt_buffer = [0_u32; buffer_size_async(1)];
 
-        let led: SmartLedsAdapterAsync<_, 25> = {
-            cfg_if::cfg_if! {
-                if #[cfg(feature = "esp32")] {
-                    SmartLedsAdapterAsync::new(rmt_channel, peripherals.GPIO33, rmt_buffer)
-                } else if #[cfg(feature = "esp32c3")] {
-                    SmartLedsAdapterAsync::new(rmt_channel, peripherals.GPIO2, rmt_buffer)
-                } else if #[cfg(any(feature = "esp32c6", feature = "esp32h2"))] {
-                    SmartLedsAdapterAsync::new(rmt_channel, peripherals.GPIO8, rmt_buffer)
-                } else if #[cfg(feature = "esp32s2")] {
-                    SmartLedsAdapterAsync::new(rmt_channel, peripherals.GPIO18, rmt_buffer)
-                } else if #[cfg(feature = "esp32s3")] {
-                    SmartLedsAdapterAsync::new(rmt_channel, peripherals.GPIO48, rmt_buffer)
-                }
-            }
-        };
+        #[cfg(feature = "esp32")]
+        let ledpin = peripherals.GPIO33;
+        #[cfg(feature = "esp32c3")]
+        let ledpin = peripherals.GPIO2;
+        #[cfg(any(feature = "esp32c6", feature = "esp32h2"))]
+        let ledpin = peripherals.GPIO8;
+        #[cfg(feature = "esp32s2")]
+        let ledpin = peripherals.GPIO18;
+        #[cfg(feature = "esp32s3")]
+        let ledpin = peripherals.GPIO48;
+
+        let led: SmartLedsAdapterAsync<_, 25> =
+            SmartLedsAdapterAsync::new(rmt_channel, ledpin, rmt_buffer);
 
         info!("starting LED rainbow");
         spawner.spawn(led_rainbow(led)).ok();

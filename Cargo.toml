@@ -1,14 +1,13 @@
 [package]
 edition = "2021"
 name = "ranodic"
-version = "0.1.0"
+version = "0.2.0"
 
 [[bin]]
 name = "ranodic"
 path = "./src/bin/main.rs"
 
 [dependencies]
-cfg-if = "1.0.1"
 critical-section = "1.2.0"
 defmt = "1.0.1"
 embassy-net = { version = "0.7.0", features = [
