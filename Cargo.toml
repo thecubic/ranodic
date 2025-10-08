@@ -36,6 +36,13 @@ sntpc = { version = "0.6.0", default-features = false, features = [
   "defmt",
 ] }
 tinygif = "*"
+# doesn't support no_std
+# image = { version = "0.25.8", default-features = false, features = [
+#   "rayon",
+#   "png",
+#   "webp",
+#   "gif",
+# ] }
 
 [dependencies.embassy-executor]
 # git = "https://github.com/embassy-rs/embassy"

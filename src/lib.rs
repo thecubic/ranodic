@@ -31,7 +31,7 @@ use alloc::string::ToString;
 use embedded_graphics::{
     geometry::Point,
     mono_font::{ascii::FONT_5X7, MonoTextStyleBuilder},
-    pixelcolor::{Rgb565, Rgb888},
+    pixelcolor::Rgb888,
     prelude::RgbColor,
     text::{Alignment, Text},
     Drawable,
