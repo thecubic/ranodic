@@ -10,11 +10,12 @@ path = "./src/bin/main.rs"
 [dependencies]
 critical-section = "1.2.0"
 defmt = "1.0.1"
-embassy-net = { version = "0.7.0", features = [
+embassy-net = { version = "0.7.1", features = [
   "dhcpv4",
   "medium-ethernet",
   "tcp",
   "udp",
+  "dns",
 ] }
 embassy-time = { version = "0.4.0", features = [] }
 embedded-graphics = "0.8.1"
@@ -22,7 +23,19 @@ embedded-io = { version = "0.6.1", features = [] }
 embedded-io-async = { version = "0.6.1", features = [] }
 smart-leds = "0.4.0"
 smart-leds-trait = "0.3.1"
-static_cell = { version = "2.1.0", features = ["nightly"] }
+static_cell = { version = "2.1.1", features = ["nightly"] }
+jiff = { version = "0.2.15", default-features = false, features = [
+  "alloc",
+  "logging",
+  "static",
+  "static-tz",
+  "perf-inline",
+] }
+sntpc = { version = "0.6.0", default-features = false, features = [
+  "embassy-socket",
+  "defmt",
+] }
+tinygif = "*"
 
 [dependencies.embassy-executor]
 # git = "https://github.com/embassy-rs/embassy"
