@@ -6,32 +6,34 @@
     holding buffers for the duration of a data transfer."
 )]
 #![feature(type_alias_impl_trait)]
-
 extern crate alloc;
-use embassy_net::StackResources;
-use esp_hal::clock::CpuClock;
-use esp_hal::gpio::Pin;
-use esp_hal::rmt::Rmt;
-use esp_hal::time::Rate;
-use esp_hal::timer::systimer::SystemTimer;
-use esp_hal::timer::timg::TimerGroup;
-
 #[cfg(feature = "defmt")]
 use defmt::info;
-
-use esp_hal_smartled::{buffer_size_async, SmartLedsAdapterAsync};
-use esp_println as _;
-
+use embassy_executor::SendSpawner;
+use embassy_net::StackResources;
 use embassy_time::{Duration, Timer};
 use esp_backtrace as _;
-use esp_hal::rtc_cntl::Rtc;
-use static_cell::make_static;
+use esp_bootloader_esp_idf::partitions::PartitionEntry;
+use esp_hal::clock::CpuClock;
+use esp_hal::gpio::Pin;
+use esp_hal::rng::Rng;
+use esp_hal::timer::timg::TimerGroup;
+use esp_println as _;
+use esp_radio::Controller;
+use esp_rtos::embassy::InterruptExecutor;
+use static_cell::StaticCell;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 
-use esp_hub75::{Hub75, Hub75Pins16};
+const NUM_SOCKS: usize = 4;
+static STACK_RESOURCES: StaticCell<StackResources<NUM_SOCKS>> = StaticCell::new();
+static WIFI_CONTROLLER: StaticCell<Controller> = StaticCell::new();
 
-#[esp_hal_embassy::main]
+const HIPRI_CORE: u8 = 2;
+static HIPRI_EXECUTOR: StaticCell<InterruptExecutor<HIPRI_CORE>> = StaticCell::new();
+static HIPRI_SPAWNER: StaticCell<SendSpawner> = StaticCell::new();
+
+#[esp_rtos::main]
 async fn main(spawner: embassy_executor::Spawner) {
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
@@ -39,120 +41,123 @@ async fn main(spawner: embassy_executor::Spawner) {
     esp_alloc::heap_allocator!(size: 64 * 1024);
     esp_alloc::heap_allocator!(#[unsafe(link_section = ".dram2_uninit")] size: 64 * 1024);
 
+    let hp_executor = {
+        #[cfg(target_arch = "riscv32")]
+        use esp_hal::interrupt::software::SoftwareInterruptControl;
+        let software_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
+        let timg0 = TimerGroup::new(peripherals.TIMG0);
+        esp_rtos::start(
+            timg0.timer0,
+            #[cfg(target_arch = "riscv32")]
+            software_interrupt.software_interrupt0,
+        );
+
+        ranodic::RTCREF
+            .init(ranodic::RTC.init(esp_hal::rtc_cntl::Rtc::new(peripherals.LPWR)))
+            .ok();
+
+        HIPRI_EXECUTOR.init(InterruptExecutor::<HIPRI_CORE>::new(
+            software_interrupt.software_interrupt2,
+        ))
+    };
+
+    let hp_spawner = HIPRI_SPAWNER.init(hp_executor.start(esp_hal::interrupt::Priority::Priority3));
+
     {
-        let timer0 = SystemTimer::new(peripherals.SYSTIMER);
-        esp_hal_embassy::init(timer0.alarm0);
-        info!("Embassy initialized!");
+        let fb0 = ranodic::FB0.init(ranodic::FBType::new());
+        let fb1 = ranodic::FB1.init(ranodic::FBType::new());
+        hp_spawner.must_spawn(ranodic::hub75_task(
+            // tried to pick least-annoying pinout for both the DevKit-C and DevKit-M
+            ranodic::DisplayPeripherals {
+                parl_io: peripherals.PARL_IO,
+                dma_channel: peripherals.DMA_CH0,
+                red1: peripherals.GPIO19.degrade(),
+                grn1: peripherals.GPIO21.degrade(),
+                blu1: peripherals.GPIO20.degrade(),
+                red2: peripherals.GPIO22.degrade(),
+                grn2: peripherals.GPIO18.degrade(),
+                blu2: peripherals.GPIO23.degrade(),
+                addr0: peripherals.GPIO9.degrade(),
+                addr1: peripherals.GPIO2.degrade(),
+                addr2: peripherals.GPIO1.degrade(),
+                addr3: peripherals.GPIO0.degrade(),
+                addr4: peripherals.GPIO15.degrade(),
+                blank: peripherals.GPIO3.degrade(),
+                clock: peripherals.GPIO7.degrade(),
+                latch: peripherals.GPIO6.degrade(),
+            },
+            fb1,
+        ));
+        spawner.must_spawn(ranodic::display_painter(fb0));
     }
 
-    {
-        let (_, tx_descriptors) =
-            esp_hal::dma_descriptors!(0, ranodic::FBType::dma_buffer_size_bytes());
-        let pins = Hub75Pins16 {
-            red1: peripherals.GPIO19.degrade(),
-            grn1: peripherals.GPIO21.degrade(),
-            blu1: peripherals.GPIO20.degrade(),
-            // the panel itself is backwards, these are if it wasn't
-            // grn1: peripherals.GPIO20.degrade(),
-            // blu1: peripherals.GPIO21.degrade(),
-            red2: peripherals.GPIO22.degrade(),
-            // the panel itself is backwards, these are if it wasn't
-            // grn2: peripherals.GPIO23.degrade(),
-            // blu2: peripherals.GPIO18.degrade(),
-            grn2: peripherals.GPIO18.degrade(),
-            blu2: peripherals.GPIO23.degrade(),
-            addr0: peripherals.GPIO10.degrade(),
-            addr1: peripherals.GPIO2.degrade(),
-            addr2: peripherals.GPIO1.degrade(),
-            addr3: peripherals.GPIO0.degrade(),
-            addr4: peripherals.GPIO11.degrade(),
-            blank: peripherals.GPIO3.degrade(),
-            clock: peripherals.GPIO7.degrade(),
-            latch: peripherals.GPIO6.degrade(),
-        };
-
-        let hub75 = Hub75::new_async(
-            peripherals.PARL_IO,
-            pins,
-            peripherals.DMA_CH0,
-            tx_descriptors,
-            Rate::from_mhz(20),
+    // hardware stack init for wifi [link]
+    let wdevice = {
+        let (controller, interfaces) = esp_radio::wifi::new(
+            WIFI_CONTROLLER.init(esp_radio::init().unwrap()),
+            peripherals.WIFI,
+            Default::default(),
         )
-        .expect("couldn't create Hub75 driver");
-        info!("created hub75 driver");
-        // info!("starting hub75 hello world");
-        // spawner.spawn(ranodic::hub75_hello_world(hub75)).ok();
-        info!("starting hub75 ferris");
-        spawner.spawn(ranodic::hub75_ferris(hub75)).ok();
-    }
+        .unwrap();
+        let wcn_watchdog_task = ranodic::conn_watchdog(controller);
+        spawner.must_spawn(wcn_watchdog_task);
+        interfaces.sta
+    };
 
-    // {
-    //     // init smart led
-    //     // technically an IR remote control *IS* a PWM LED
-    //     #[cfg(feature = "esp32h2")]
-    //     let frequency = Rate::from_mhz(32);
-    //     #[cfg(not(feature = "esp32h2"))]
-    //     let frequency = Rate::from_mhz(80);
-
-    //     let rmt: Rmt<'_, esp_hal::Async> = Rmt::new(peripherals.RMT, frequency)
-    //         .expect("Failed to initialize RMT")
-    //         .into_async();
-
-    //     let rmt_channel = rmt.channel0;
-    //     let rmt_buffer = [0_u32; buffer_size_async(1)];
-
-    //     #[cfg(feature = "esp32")]
-    //     let ledpin = peripherals.GPIO33;
-    //     #[cfg(feature = "esp32c3")]
-    //     let ledpin = peripherals.GPIO2;
-    //     #[cfg(any(feature = "esp32c6", feature = "esp32h2"))]
-    //     let ledpin = peripherals.GPIO8;
-    //     #[cfg(feature = "esp32s2")]
-    //     let ledpin = peripherals.GPIO18;
-    //     #[cfg(feature = "esp32s3")]
-    //     let ledpin = peripherals.GPIO48;
-
-    //     let led: SmartLedsAdapterAsync<_, 25> =
-    //         SmartLedsAdapterAsync::new(rmt_channel, ledpin, rmt_buffer);
-
-    //     info!("starting LED rainbow");
-    //     spawner.spawn(ranodic::led_rainbow(led)).ok();
-    // }
-
+    // software stack init for wifi [stack]
     let stack = {
-        let mut rng = esp_hal::rng::Rng::new(peripherals.RNG);
-        let timer1 = TimerGroup::new(peripherals.TIMG0);
-        let wifi_init =
-            make_static!(esp_wifi::init(timer1.timer0, rng)
-                .expect("Failed to initialize WIFI/BLE controller"));
-        let (wifi_controller, interfaces) = esp_wifi::wifi::new(wifi_init, peripherals.WIFI)
-            .expect("Failed to initialize WIFI controller");
-        let wdevice = interfaces.sta;
+        let rng = Rng::new();
         let dhcpcfg = embassy_net::Config::dhcpv4(Default::default());
         let seed = (rng.random() as u64) << 32 | rng.random() as u64;
         let (stack, netrunner) = embassy_net::new(
             wdevice,
             dhcpcfg,
-            make_static!(StackResources::<3>::new()),
+            STACK_RESOURCES.init(StackResources::<NUM_SOCKS>::new()),
             seed,
         );
-        let wcn_watchdog_task = ranodic::conn_watchdog(wifi_controller);
-        spawner.spawn(wcn_watchdog_task).ok();
         let netrun_task = ranodic::net_task(netrunner);
-        spawner.spawn(netrun_task).ok();
-
-        ranodic::net_up(stack).await;
+        spawner.must_spawn(netrun_task);
         stack
     };
 
+    // remaining things are netstuff so await function
+    ranodic::net_up(stack).await;
+
     {
         // NTP
-        let rtc = Rtc::new(peripherals.LPWR);
-        let ntp_task = ranodic::ntp_sync(stack, rtc);
-        spawner.spawn(ntp_task).ok();
+        let ntp_task = ranodic::ntp_sync(stack);
+        spawner.must_spawn(ntp_task);
+    }
+
+    {
+        let nightscout_task = ranodic::nightscout_query(stack);
+        spawner.must_spawn(nightscout_task);
+    }
+
+    {
+        // OTA [TODO]
+        use alloc::vec::Vec;
+        use esp_storage::FlashStorage;
+        let mut buffer = [0u8; esp_bootloader_esp_idf::partitions::PARTITION_TABLE_MAX_LEN];
+        let flash = ranodic::FLASH.init(FlashStorage::new(peripherals.FLASH));
+        let partition_table =
+            esp_bootloader_esp_idf::partitions::read_partition_table(flash, &mut buffer).unwrap();
+
+        let mut partitions: Vec<PartitionEntry> = Vec::new();
+        let entries = partition_table.len();
+        for i in 0..entries {
+            let partition = partition_table.get_partition(i).unwrap();
+            info!("{:?}", partition);
+            partitions.push(partition);
+        }
+        info!(
+            "Currently booted partition {:?}",
+            partition_table.booted_partition()
+        );
     }
 
     // spawner.spawn(ranodic::heap_stats_printer()).ok();
+
     info!("steady state; awaiting heat death of the universe");
     loop {
         Timer::after(Duration::from_secs(5)).await;

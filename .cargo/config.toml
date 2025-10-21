@@ -1,8 +1,37 @@
 [target.riscv32imac-unknown-none-elf]
-runner = "espflash flash --monitor --chip esp32c6 --log-format defmt"
+runner = "espflash flash --monitor --chip esp32c6 --log-format defmt --partition-table=partitions.csv"
 
 [env]
 DEFMT_LOG = "info"
+ESP_LOG = "info"
+MONITOR_BAUD = "115200"
+ESPFLASH_BAUD = "460800"
+SSID = "fbi"
+PASSWORD = "flowers by irene"
+NIGHTSCOUT_URL = "http://example.com"
+NIGHTSCOUT_TOKEN = "ride on the bus"
+NTP_SERVER = "pool.ntp.org"
+
+# [target.'cfg(target_arch = "riscv32")']
+# runner = "espflash flash --monitor --chip esp32c6 --log-format defmt --partition-table=partitions.csv"
+# rustflags = ["-C", "link-arg=-Tlinkall.x", "-C", "force-frame-pointers"]
+
+# [target.'cfg(target_arch = "xtensa")']
+# runner = "espflash flash --monitor --chip esp32c6 --log-format defmt --partition-table=partitions.csv"
+# rustflags = [
+#   # GNU LD
+#   "-C",
+#   "link-arg=-Wl,-Tlinkall.x",
+#   "-C",
+#   "link-arg=-nostartfiles",
+
+#   # LLD
+#   # "-C", "link-arg=-Tlinkall.x",
+#   # "-C", "linker=rust-lld",
+# ]
+
+[unstable]
+build-std = ["alloc", "core"]
 
 [build]
 rustflags = [
@@ -13,6 +42,3 @@ rustflags = [
 ]
 
 target = "riscv32imac-unknown-none-elf"
-
-[unstable]
-build-std = ["alloc", "core"]

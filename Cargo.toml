@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "ranodic"
-version = "0.2.0"
+version = "0.4.7"
 
 [[bin]]
 name = "ranodic"
@@ -10,6 +10,7 @@ path = "./src/bin/main.rs"
 [dependencies]
 critical-section = "1.2.0"
 defmt = "1.0.1"
+embassy-futures = { version = "0.1.2", features = ["defmt"] }
 embassy-net = { version = "0.7.1", features = [
   "dhcpv4",
   "medium-ethernet",
@@ -17,13 +18,12 @@ embassy-net = { version = "0.7.1", features = [
   "udp",
   "dns",
 ] }
-embassy-time = { version = "0.4.0", features = [] }
+embassy-sync = "0.7.2"
+embassy-time = { version = "0.5.0", features = [] }
 embedded-graphics = "0.8.1"
-embedded-io = { version = "0.6.1", features = [] }
-embedded-io-async = { version = "0.6.1", features = [] }
-smart-leds = "0.4.0"
-smart-leds-trait = "0.3.1"
-static_cell = { version = "2.1.1", features = ["nightly"] }
+embedded-io = { version = "0.7.1", features = [] }
+embedded-io-async = { version = "0.7.0", features = [] }
+embedded-storage = "0.3.1"
 jiff = { version = "0.2.15", default-features = false, features = [
   "alloc",
   "logging",
@@ -31,62 +31,63 @@ jiff = { version = "0.2.15", default-features = false, features = [
   "static-tz",
   "perf-inline",
 ] }
-sntpc = { version = "0.6.0", default-features = false, features = [
+reqwless = { version = "0.13.0", default-features = false, features = [
+  "alloc",
+  "embedded-tls",
+] }
+serde_json = { version = "1.0.145", default-features = false, features = [
+  "alloc",
+] }
+serde-json-core = { version = "0.6.0", features = ["defmt"] }
+sntpc = { version = "0.6.1", default-features = false, features = [
   "embassy-socket",
   "defmt",
 ] }
-tinygif = "*"
-# doesn't support no_std
-# image = { version = "0.25.8", default-features = false, features = [
-#   "rayon",
-#   "png",
-#   "webp",
-#   "gif",
-# ] }
+static_cell = { version = "2.1.1", features = ["nightly"] }
+tinygif = "0.0.4"
 
 [dependencies.embassy-executor]
-# git = "https://github.com/embassy-rs/embassy"
-version = "0.7.0"
-features = ["task-arena-size-65536"]
-
-[dependencies.esp-hal-smartled]
-git = "https://github.com/esp-rs/esp-hal-community"
+version = "0.9.1"
 
 ## ESP-HAL
 
 [dependencies.esp-hal]
-# git = "https://github.com/esp-rs/esp-hal"
-version = "1.0.0-rc.0"
+version = "1.0.0-rc.1"
 features = ["unstable"]
 
-
 [dependencies.esp-metadata-generated]
-version = "0.1.0"
-
-[dependencies.esp-bootloader-esp-idf]
 version = "0.2.0"
 
+[dependencies.esp-bootloader-esp-idf]
+version = "0.3.0"
+
 [dependencies.esp-println]
-version = "0.15.0"
+version = "0.16.0"
 
 [dependencies.esp-backtrace]
-version = "0.17.0"
-features = ["exception-handler", "panic-handler"]
+version = "0.18.0"
+features = ["panic-handler"]
 
 [dependencies.esp-alloc]
-version = "0.8.0"
+version = "0.9.0"
 features = []
 
-[dependencies.esp-wifi]
-version = "0.15.0"
-features = ["builtin-scheduler", "esp-alloc", "smoltcp", "wifi"]
+[dependencies.esp-storage]
+version = "0.8.0"
 
-[dependencies.esp-hal-embassy]
-version = "0.9.0"
-features = ["executors"]
+[dependencies.esp-radio]
+version = "0.16.0"
+features = ["esp-alloc", "smoltcp", "wifi", "unstable"]
 
 [dependencies.esp-hub75]
-git = "https://github.com/liebman/esp-hub75"
+version = "0.7.0"
+
+[dependencies.esp-rom-sys]
+version = "0.1.1"
+
+[dependencies.esp-rtos]
+version = "0.1.1"
+features = ["embassy", "esp-radio", "esp-alloc"]
 
 [dependencies.smoltcp]
 version = "0.12.0"
@@ -123,29 +124,27 @@ esp32c6 = [
   "esp-backtrace/esp32c6",
   "esp-bootloader-esp-idf/esp32c6",
   "esp-hal/esp32c6",
-  "esp-hal-embassy/esp32c6",
-  "esp-hal-smartled/esp32c6",
   "esp-hub75/esp32c6",
   "esp-metadata-generated/esp32c6",
   "esp-println/esp32c6",
-  "esp-wifi/esp32c6",
-  "esp-hub75/defmt",
+  "esp-radio/esp32c6",
+  "esp-rtos/esp32c6",
+  "esp-storage/esp32c6",
 ]
 defmt = [
   "embassy-executor/defmt",
   "embassy-net/defmt",
   "embassy-time/defmt",
   "embedded-graphics/defmt",
-  "embedded-io/defmt-03",
-  "embedded-io-async/defmt-03",
+  "embedded-io/defmt",
+  "embedded-io-async/defmt",
   "esp-alloc/defmt",
   "esp-backtrace/defmt",
+  "esp-bootloader-esp-idf/defmt",
   "esp-println/defmt-espflash",
   "esp-hal/defmt",
-  "esp-hal-embassy/defmt",
-  "esp-hal-smartled/defmt",
   "esp-hub75/defmt",
-  "esp-wifi/defmt",
+  "esp-radio/defmt",
   "smoltcp/defmt",
 ]
 # don't care
