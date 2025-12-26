@@ -1,0 +1,30 @@
+[package]
+edition = "2024"
+name = "ranodic-xtensa"
+version = "0.0.0"
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+[[bin]]
+name = "ranodic-esp32s3"
+path = "./src/bin/esp32s3.rs"
+required-features = ["esp32s3", "selfwire"]
+
+[dependencies]
+
+[dependencies.ranodic]
+path = "../ranodic"
+features = []
+
+[features]
+default = ["esp32s3", "selfwire", "defmt", "alloc"]
+esp32s3 = ["ranodic/esp32s3"]
+selfwire = ["ranodic/selfwire"]
+defmt = ["ranodic/defmt"]
+alloc = ["ranodic/alloc"]
+whack = ["ranodic/whack"]
+heapstats = ["ranodic/heapstats"]
+harakiri = ["ranodic/harakiri"]
+rtcchip = ['ranodic/rtcchip']

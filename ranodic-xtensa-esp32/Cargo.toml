@@ -1,0 +1,31 @@
+[package]
+edition = "2024"
+name = "ranodic-xtensa-esp32"
+version = "0.0.0"
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+[[bin]]
+name = "ranodic-tidbyt"
+path = "./src/bin/tidbyt.rs"
+required-features = ["esp32", "tidbyt"]
+
+[dependencies]
+
+[dependencies.ranodic]
+path = "../ranodic"
+features = []
+
+[features]
+default = ["esp32", "tidbyt", "defmt", "alloc"]
+esp32 = ["ranodic/esp32"]
+selfwire = ["ranodic/selfwire"]
+defmt = ["ranodic/defmt"]
+alloc = ["ranodic/alloc"]
+tidbyt = ["ranodic/tidbyt"]
+whack = ["ranodic/whack"]
+heapstats = ["ranodic/heapstats"]
+harakiri = ["ranodic/harakiri"]
+rtcchip = ['ranodic/rtcchip']

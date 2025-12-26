@@ -1,0 +1,31 @@
+[package]
+edition = "2024"
+name = "ranodic-riscv"
+version = "0.0.0"
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+[[bin]]
+name = "ranodic-esp32c6"
+path = "./src/bin/esp32c6.rs"
+required-features = ["esp32c6", "selfwire"]
+
+[dependencies]
+
+[dependencies.ranodic]
+path = "../ranodic"
+features = ["esp32c6", "selfwire", "defmt", "alloc"]
+
+[features]
+default = ["esp32c6", "selfwire", "defmt", "alloc"]
+esp32c6 = ["ranodic/esp32c6"]
+esp32c3 = ["ranodic/esp32c3"]
+selfwire = ["ranodic/selfwire"]
+defmt = ["ranodic/defmt"]
+alloc = ["ranodic/alloc"]
+whack = ["ranodic/whack"]
+rtcchip = ["ranodic/rtcchip"]
+heapstats = ["ranodic/heapstats"]
+harakiri = ["ranodic/harakiri"]
