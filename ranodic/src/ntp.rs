@@ -5,9 +5,8 @@ use alloc::string::ToString;
 use anyhow::anyhow;
 use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, Ordering};
-use defmt::debug;
-#[cfg(feature = "defmt")]
-use defmt::{error, info};
+
+use crate::log::{debug, error, info};
 use embassy_net::IpAddress;
 use embassy_net::udp::{PacketMetadata, UdpSocket};
 use embassy_time::Timer;

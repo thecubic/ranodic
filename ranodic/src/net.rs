@@ -1,11 +1,12 @@
-#[cfg(feature = "defmt")]
-use defmt::{debug, error, info};
+use crate::log::{debug, error, info};
 
 use embassy_net::{Runner, Stack};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
 
-use esp_radio::wifi::{ClientConfig, WifiController, WifiDevice, WifiEvent, WifiStaState};
+use esp_radio::wifi::{
+    ClientConfig, ScanConfig, WifiController, WifiDevice, WifiEvent, WifiStaState,
+};
 use nanofish::HttpClient;
 
 pub const SSID: &str = env!("WIFI_SSID");
@@ -48,7 +49,18 @@ pub async fn conn_watchdog(mut controller: WifiController<'static>) {
             Ok(_) => info!("Wifi connected"),
             Err(e) => {
                 error!("Failed to connect to wifi: {:?}", e);
-                crate::graceful_sever_divine_light().await;
+                match controller
+                    .scan_with_config_async(ScanConfig::default().with_show_hidden(true))
+                    .await
+                {
+                    Ok(_stahs) => {
+                        // if stahs {}
+                    }
+                    Err(e) => {
+                        crate::graceful_sever_divine_light().await;
+                    }
+                }
+
                 Timer::after(Duration::from_millis(5000)).await
             }
         }

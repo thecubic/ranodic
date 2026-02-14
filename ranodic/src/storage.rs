@@ -8,9 +8,9 @@ use alloc::sync::Arc;
 use alloc::{boxed::Box, vec::Vec};
 use anyhow::{Error, Result, anyhow};
 use critical_section::Mutex;
-use defmt::println;
-#[cfg(feature = "defmt")]
-use defmt::{debug, error, info};
+
+use crate::log::{debug, error, info, println};
+
 use embassy_sync::blocking_mutex::{Mutex as BlockingMutex, raw::CriticalSectionRawMutex};
 use embassy_sync::mutex::Mutex as AsyncMutex;
 use embassy_sync::once_lock::OnceLock;

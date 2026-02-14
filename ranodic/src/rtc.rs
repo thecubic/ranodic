@@ -1,10 +1,10 @@
 // ds323x::
 
+use crate::log::{error, info};
 use crate::{RTCREF, ntp::TIME_SYNCED};
 use anyhow::{Result, anyhow};
 use chrono::{DateTime, NaiveDateTime, TimeDelta};
 use core::sync::atomic::Ordering;
-use defmt::{error, info};
 use ds323x::{DateTimeAccess, Ds323x, ic::DS3231, interface::I2cInterface};
 use embassy_time::{Duration, Timer};
 use esp_hal::{

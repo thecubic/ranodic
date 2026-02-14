@@ -6,6 +6,7 @@ pub mod drawing;
 pub mod entry;
 pub mod forecast;
 pub mod hub75;
+pub mod log;
 pub mod net;
 pub mod nightscout;
 pub mod ntp;
@@ -19,8 +20,8 @@ use core::cell::UnsafeCell;
 
 use core::sync::atomic::{AtomicBool, AtomicI8, Ordering};
 
-#[cfg(feature = "defmt")]
-use defmt::{debug, error, info, warn};
+use crate::log::{debug, error, info, warn};
+
 use embassy_executor::{SendSpawner, Spawner};
 
 use embassy_sync::once_lock::OnceLock;
@@ -69,36 +70,36 @@ static DIVINE_LIGHT: AtomicI8 = AtomicI8::new(5);
 pub extern "C" fn sever_divine_light() {
     let light = DIVINE_LIGHT.fetch_sub(1, Ordering::Relaxed);
     info!("severed divine light: {}", light);
-    if light == 4 {
-        warn!("four divine lights left");
-    } else if light == 3 {
-        warn!("three divine lights left");
-    } else if light == 2 {
-        warn!("two divine lights left");
-    } else if light == 1 {
-        warn!("one divine light left");
-    } else {
+    if light <= 1 {
         error!("no divine light left, resetting...");
         software_reset();
+    } else if light == 5 {
+        warn!("four divine lights left");
+    } else if light == 4 {
+        warn!("three divine lights left");
+    } else if light == 3 {
+        warn!("two divine lights left");
+    } else if light == 2 {
+        warn!("one divine light left");
     }
 }
 
 pub async fn graceful_sever_divine_light() {
     let light = DIVINE_LIGHT.fetch_sub(1, Ordering::Relaxed);
-    info!("severed divine light: {}", light);
-    if light == 4 {
-        warn!("four divine lights left");
-    } else if light == 3 {
-        warn!("three divine lights left");
-    } else if light == 2 {
-        warn!("two divine lights left");
-    } else if light == 1 {
-        warn!("one divine light left");
-    } else {
+    info!("graceful severed divine light: {}", light);
+    if light <= 1 {
         error!("no divine light left, resetting...");
         graceful_shutdown();
         Timer::after_secs(1).await;
         software_reset();
+    } else if light == 5 {
+        warn!("four divine lights left");
+    } else if light == 4 {
+        warn!("three divine lights left");
+    } else if light == 3 {
+        warn!("two divine lights left");
+    } else if light == 2 {
+        warn!("one divine light left");
     }
 }
 

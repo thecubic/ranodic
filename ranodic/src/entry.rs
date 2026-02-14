@@ -1,7 +1,6 @@
 extern crate alloc;
 
-#[cfg(feature = "defmt")]
-use defmt::{error, info, println};
+use crate::log::{error, info, println};
 use embassy_executor::SendSpawner;
 use embassy_net::{DhcpConfig, StackResources};
 use embassy_time::{Duration, Timer};

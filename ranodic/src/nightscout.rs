@@ -4,8 +4,8 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-#[cfg(feature = "defmt")]
-use defmt::{Formatter, debug, error, info, write};
+
+use crate::log::{debug, error, info};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::Watch};
 use embassy_time::Timer;
 use embedded_graphics::pixelcolor::RgbColor;
@@ -89,10 +89,11 @@ pub struct BgReading {
     pub timestamp: jiff::Zoned,
 }
 
+#[cfg(feature = "defmt")]
 impl defmt::Format for BgReading {
-    fn format(&self, fmt: Formatter) {
-        write!(fmt, "BgReading({} {} @ ", self.bg, self.units.as_str());
-        write!(fmt, "{})", self.timestamp.to_string().as_str());
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "BgReading({} {} @ ", self.bg, self.units.as_str());
+        defmt::write!(fmt, "{})", self.timestamp.to_string().as_str());
     }
 }
 

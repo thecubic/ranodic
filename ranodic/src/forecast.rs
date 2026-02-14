@@ -1,8 +1,7 @@
 use core::sync::atomic::Ordering;
 
+use crate::log::debug;
 use alloc::string::ToString;
-#[cfg(feature = "defmt")]
-use defmt::debug;
 use jiff::{ToSpan, Zoned, civil::DateTime};
 use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 

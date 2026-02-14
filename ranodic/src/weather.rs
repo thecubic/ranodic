@@ -1,8 +1,8 @@
 use core::sync::atomic::{AtomicBool, AtomicU8};
 
 use alloc::{format, string::ToString};
-#[cfg(feature = "defmt")]
-use defmt::{debug, error, info};
+
+use crate::log::{debug, error, info};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::Timer;
 

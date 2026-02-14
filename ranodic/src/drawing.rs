@@ -1,9 +1,8 @@
 use core::sync::atomic::Ordering;
 
 use alloc::string::ToString;
-use defmt::error;
-#[cfg(feature = "defmt")]
-use defmt::info;
+
+use crate::log::{error, info};
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex, lazy_lock::LazyLock, signal::Signal,
     watch::Receiver,

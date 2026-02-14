@@ -1,5 +1,5 @@
-#[cfg(feature = "defmt")]
-use defmt::info;
+use crate::log::info;
+
 use embassy_time::Timer;
 #[cfg(feature = "esp32")]
 use esp_hal::i2s::AnyI2s;
