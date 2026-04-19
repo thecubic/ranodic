@@ -54,8 +54,10 @@ pub async fn main(spawner: embassy_executor::Spawner) {
     crate::show_reset_reason();
 
     esp_alloc::heap_allocator!(#[esp_hal::ram(reclaimed)] size: 64000);
+
     #[cfg(not(feature = "esp32"))]
     esp_alloc::heap_allocator!(size: 48 * 1024);
+
     #[cfg(feature = "esp32")]
     esp_alloc::heap_allocator!(size: 16 * 1024);
 
@@ -77,7 +79,8 @@ pub async fn main(spawner: embassy_executor::Spawner) {
         let timg0 = TimerGroup::new(peripherals.TIMG0);
         esp_rtos::start(
             timg0.timer0,
-            #[cfg(target_arch = "riscv32")]
+            // #[cfg(target_arch = "riscv32")]
+            #[cfg(feature = "esp32c6")]
             software_interrupt.software_interrupt0,
         );
         HIPRI_EXECUTOR.init_with(|| {
@@ -88,7 +91,7 @@ pub async fn main(spawner: embassy_executor::Spawner) {
     let hp_spawner =
         HIPRI_SPAWNER.init_with(|| hp_executor.start(esp_hal::interrupt::Priority::Priority3));
 
-    hp_spawner.must_spawn(crate::ntp::tick_writer());
+    // hp_spawner.must_spawn(crate::ntp::tick_writer());
 
     // 4 brightness bits slays the stack here
     let fb0 = crate::drawing::FB0.init_with(|| crate::hub75::FBType::new());

@@ -16,14 +16,15 @@ required-features = ["esp32c6", "selfwire"]
 
 [dependencies.ranodic]
 path = "../ranodic"
-features = ["esp32c6", "selfwire", "defmt", "alloc"]
+features = ["esp32c6", "selfwire", "alloc"]
 
 [features]
-default = ["esp32c6", "selfwire", "defmt", "alloc"]
+default = ["esp32c6", "selfwire", "alloc"]
 esp32c6 = ["ranodic/esp32c6"]
 esp32c3 = ["ranodic/esp32c3"]
 selfwire = ["ranodic/selfwire"]
 defmt = ["ranodic/defmt"]
+log = ["ranodic/log"]
 alloc = ["ranodic/alloc"]
 whack = ["ranodic/whack"]
 rtcchip = ["ranodic/rtcchip"]

@@ -4,7 +4,7 @@ use crate::rtc::micros_to_ic;
 use alloc::string::ToString;
 use anyhow::anyhow;
 use core::net::SocketAddr;
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::log::{debug, error, info};
 use embassy_net::IpAddress;
@@ -40,6 +40,8 @@ pub const TIMEZONE: jiff::tz::TimeZone = jiff::tz::get!("PST8PDT");
 const NTP_SERVER: &str = env!("NTP_SERVER");
 const USEC_IN_SEC: u64 = 1_000_000;
 const NTP_INTERVAL: u64 = 120;
+
+pub static NTP_SYNCED: AtomicU32 = AtomicU32::new(0);
 
 pub static TIME_SYNCED: AtomicBool = AtomicBool::new(false);
 
@@ -88,29 +90,30 @@ impl NtpTimestampGenerator for RtcTimestampGen<'_> {
 
 #[embassy_executor::task]
 pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
-    debug!("ntp_sync: TICK = {}", unsafe { TICK });
     debug!("ntp_sync started");
-    let mut rx_meta = [PacketMetadata::EMPTY; 16];
-    let mut rx_buffer = [0; 4096];
-    let mut tx_meta = [PacketMetadata::EMPTY; 16];
-    let mut tx_buffer = [0; 4096];
-    let mut socket = UdpSocket::new(
-        stack,
-        &mut rx_meta,
-        &mut rx_buffer,
-        &mut tx_meta,
-        &mut tx_buffer,
-    );
-    socket.bind(123).unwrap();
-    let ntpctx = NtpContext::new(RtcTimestampGen::new().await);
     loop {
         stack.wait_config_up().await;
+        let ntpctx = NtpContext::new(RtcTimestampGen::new().await);
+        let mut rx_meta = [PacketMetadata::EMPTY; 16];
+        let mut rx_buffer = [0; 4096];
+        let mut tx_meta = [PacketMetadata::EMPTY; 16];
+        let mut tx_buffer = [0; 4096];
+        let mut socket = UdpSocket::new(
+            stack,
+            &mut rx_meta,
+            &mut rx_buffer,
+            &mut tx_meta,
+            &mut tx_buffer,
+        );
+        socket.bind(123).unwrap();
         debug!("ntp_sync network stack up");
         info!("ntp_sync: DNS");
         let addrs = match stack.dns_query(NTP_SERVER, DnsQueryType::A).await {
             Ok(e) => {
                 if e.is_empty() {
                     error!("ntp_sync: empty addresses for {}", NTP_SERVER);
+                    #[cfg(feature = "rtcchip")]
+                    let _ = crate::rtc::ic_to_sys().await;
                     Timer::after_secs(NTP_INTERVAL / 10).await;
                     continue;
                 }
@@ -118,6 +121,8 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
             }
             Err(e) => {
                 error!("ntp_sync: DNS error: {}", e);
+                #[cfg(feature = "rtcchip")]
+                let _ = crate::rtc::ic_to_sys().await;
                 Timer::after_secs(NTP_INTERVAL / 10).await;
                 continue;
             }
@@ -137,9 +142,23 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
                         + sntpc::fraction_to_microseconds(ntptime.sec_fraction()) as u64,
                 );
                 TIME_SYNCED.store(true, Ordering::Relaxed);
+                NTP_SYNCED.store(
+                    RTCREF
+                        .get()
+                        .await
+                        .time_since_boot()
+                        .as_secs()
+                        .try_into()
+                        .unwrap(),
+                    Ordering::Relaxed,
+                );
             }
             Err(e) => {
                 error!("ntp_sync: Error getting time: {:?}", e.to_string());
+                #[cfg(feature = "rtcchip")]
+                let _ = crate::rtc::ic_to_sys().await;
+                Timer::after_secs(NTP_INTERVAL / 10).await;
+                continue;
             }
         }
         Timer::after_secs(NTP_INTERVAL).await;

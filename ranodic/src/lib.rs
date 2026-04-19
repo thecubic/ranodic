@@ -21,6 +21,7 @@ use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicI8, Ordering};
 
 use crate::log::{debug, error, info, warn};
+use crate::ntp::NTP_SYNCED;
 
 use embassy_executor::{SendSpawner, Spawner};
 
@@ -103,6 +104,12 @@ pub async fn graceful_sever_divine_light() {
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn divine_light_shrine() {
+    let light = DIVINE_LIGHT.fetch_add(1, Ordering::Relaxed);
+    info!("divine light restored: {}", light);
+}
+
 pub static MAC_ADDRESS: OnceLock<[u8; 6]> = OnceLock::new();
 
 fn clear_rtc_interrupt() {
@@ -126,6 +133,8 @@ fn clear_rtc_interrupt() {
     wpr.write(|w| unsafe { w.bits(0u32) });
 }
 
+pub static PLS_DIE: AtomicBool = AtomicBool::new(false);
+
 #[unsafe(no_mangle)]
 extern "C" fn RtcInterruptHandler() {
     let cpu = esp_hal::system::Cpu::current();
@@ -134,8 +143,10 @@ extern "C" fn RtcInterruptHandler() {
 
     info!("RTC interrupt on {:?}", cpu);
 
-    // i do not know how to get the WDT object here
-    // so copypasta cowabunga it is
+    if PLS_DIE.load(Ordering::Relaxed) {
+        error!("time to die");
+        software_reset();
+    }
 
     #[cfg(feature = "esp32c6")]
     let wpr = LP_WDT::regs().wdtwprotect();
@@ -180,6 +191,10 @@ pub async fn watchdog_controller(rwdt: &'static mut Rwdt) {
     rwdt.listen();
     let mut feeds = 0u64;
     loop {
+        if guess_ill_die().await {
+            PLS_DIE.store(true, Ordering::Relaxed);
+            break;
+        }
         rwdt.feed();
         feeds += 1;
         if feeds % 100 == 0 {
@@ -187,6 +202,24 @@ pub async fn watchdog_controller(rwdt: &'static mut Rwdt) {
         }
         Timer::after_millis(300).await;
     }
+}
+
+pub async fn guess_ill_die() -> bool {
+    let ntpsync = NTP_SYNCED.load(Ordering::Relaxed) as u64;
+    if ntpsync < 5 {
+        return false;
+    }
+    let ntpdelta = RTCREF.get().await.time_since_boot().as_secs() - ntpsync;
+    if ntpdelta > 300 {
+        error!("guess_ill_die: no NTP sync in 5 minutes");
+        return true;
+    }
+    // debug!(
+    //     "guess_ill_die: now:{} ntp:{}",
+    //     RTCREF.get().await.time_since_boot().as_secs(),
+    //     - NTP_SYNCED.load(Ordering::Relaxed)
+    // );
+    false
 }
 
 pub static GRACEFUL_SHUTDOWN: AtomicBool = AtomicBool::new(false);

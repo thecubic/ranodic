@@ -5,7 +5,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
 
 use esp_radio::wifi::{
-    ClientConfig, ScanConfig, WifiController, WifiDevice, WifiEvent, WifiStaState,
+    ClientConfig, ScanConfig, WifiController, WifiDevice, WifiError, WifiEvent, WifiStaState,
 };
 use nanofish::HttpClient;
 
@@ -46,21 +46,26 @@ pub async fn conn_watchdog(mut controller: WifiController<'static>) {
         }
         debug!("About to connect...");
         match controller.connect_async().await {
-            Ok(_) => info!("Wifi connected"),
+            Ok(_) => {
+                crate::divine_light_shrine();
+                info!("Wifi connected");
+            }
             Err(e) => {
                 error!("Failed to connect to wifi: {:?}", e);
                 match controller
                     .scan_with_config_async(ScanConfig::default().with_show_hidden(true))
                     .await
                 {
-                    Ok(_stahs) => {
-                        // if stahs {}
+                    Ok(nets) => {
+                        if nets.is_empty() {
+                            crate::graceful_sever_divine_light().await;
+                        }
                     }
                     Err(e) => {
+                        error!("WiFiError: {:?}", e);
                         crate::graceful_sever_divine_light().await;
                     }
                 }
-
                 Timer::after(Duration::from_millis(5000)).await
             }
         }

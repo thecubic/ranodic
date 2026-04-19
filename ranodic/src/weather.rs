@@ -143,7 +143,10 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
     'inputlines: for line in jason.lines() {
         if !nline {
             // skip the first line which is suspect
-            debug!("digest_body: skipping suspicious first line; next line");
+            debug!(
+                "digest_body: skipping suspicious first line \"{}\"; next line",
+                line
+            );
             nline = true;
             continue;
         }
@@ -154,7 +157,10 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
                     timezone
                 } else {
                     // lots of stuff technically parses as JSON
-                    debug!("digest_body: parsed JSON doesn't contain expected value; next line");
+                    debug!(
+                        "digest_body: parsed JSON doesn't contain expected value; cur \"{}\"; next line",
+                        line
+                    );
                     continue;
                 };
                 debug!("digest_body: data has timezone: {}", timezone);
