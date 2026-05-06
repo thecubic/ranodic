@@ -18,6 +18,7 @@ use sntpc::{
     NtpContext, NtpResult, NtpTimestampGenerator, NtpUdpSocket, sntp_process_response,
     sntp_send_request,
 };
+use sntpc_net_embassy::UdpSocketWrapper;
 
 // const TZ: &str = env!("TZ");
 
@@ -95,9 +96,9 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
         stack.wait_config_up().await;
         let ntpctx = NtpContext::new(RtcTimestampGen::new().await);
         let mut rx_meta = [PacketMetadata::EMPTY; 16];
-        let mut rx_buffer = [0; 4096];
+        let mut rx_buffer = [0; 1024];
         let mut tx_meta = [PacketMetadata::EMPTY; 16];
-        let mut tx_buffer = [0; 4096];
+        let mut tx_buffer = [0; 1024];
         let mut socket = UdpSocket::new(
             stack,
             &mut rx_meta,
@@ -106,6 +107,7 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
             &mut tx_buffer,
         );
         socket.bind(123).unwrap();
+        let ntpsocket = UdpSocketWrapper::new(socket);
         debug!("ntp_sync network stack up");
         info!("ntp_sync: DNS");
         let addrs = match stack.dns_query(NTP_SERVER, DnsQueryType::A).await {
@@ -128,7 +130,7 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
             }
         };
         info!("ntp_sync: get_time");
-        match get_time(addrs, &socket, ntpctx).await {
+        match get_time(addrs, &ntpsocket, ntpctx).await {
             Ok(ntptime) => {
                 info!("ntp_sync: ok response");
 

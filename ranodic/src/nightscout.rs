@@ -89,6 +89,11 @@ pub struct BgReading {
     pub timestamp: jiff::Zoned,
 }
 
+// #[derive(Clone, Debug)]
+// pub struct BgHistory {
+
+// }
+
 #[cfg(feature = "defmt")]
 impl defmt::Format for BgReading {
     fn format(&self, fmt: defmt::Formatter) {

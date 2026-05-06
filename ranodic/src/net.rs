@@ -5,7 +5,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::{Duration, Timer};
 
 use esp_radio::wifi::{
-    ClientConfig, ScanConfig, WifiController, WifiDevice, WifiError, WifiEvent, WifiStaState,
+    ClientConfig, ScanConfig, WifiController, WifiDevice, WifiEvent, WifiStaState,
 };
 use nanofish::HttpClient;
 
@@ -16,7 +16,7 @@ pub const DEFAULT_SSID: &str = "fbi";
 pub const DEFAULT_PASSWORD: &str = "flowers by irene";
 
 #[cfg(not(feature = "esp32"))]
-pub type WorkingClient<'a> = HttpClient<'a, 2048, 2048, 16640, 2048, 2048>;
+pub type WorkingClient<'a> = HttpClient<'a, 4096, 4096, 16640, 4096, 4096>;
 
 #[cfg(feature = "esp32")]
 pub type WorkingClient<'a> = HttpClient<'a, 2048, 2048, 4096, 2048, 2048>;

@@ -1,7 +1,7 @@
 [package]
 edition = "2024"
 name = "ranodic"
-version = "0.8.0"
+version = "0.8.2"
 autobins = false
 autoexamples = false
 autotests = false
@@ -10,63 +10,61 @@ autobenches = false
 [lib]
 
 [dependencies]
-critical-section = "1.2"
-defmt = { version = "1.0", optional = true }
-embassy-futures = { version = "0.1", features = [] }
-embassy-net = { version = "0.7", default-features = false, features = [
+critical-section = "1.2.0"
+defmt = { version = "1.0.1", optional = true }
+embassy-futures = { version = "0.1.2", features = [] }
+embassy-net = { version = "0.9.1", default-features = false, features = [
   "dhcpv4",
   "dhcpv4-hostname",
-  "proto-ipv6",
   "medium-ethernet",
   "tcp",
   "udp",
   "dns",
 ] }
-embassy-sync = "0.7"
-embassy-time = { version = "0.5", default-features = false, features = [] }
-embedded-graphics = "0.8"
-embedded-io = { version = "0.7", features = [] }
-embedded-io-async = { version = "0.7", features = [] }
-embedded-storage = "0.3"
-jiff = { version = "0.2", default-features = false, features = [
+embassy-sync = "0.8.0"
+embassy-time = { version = "0.5.1", default-features = false, features = [] }
+embedded-graphics = "0.8.2"
+embedded-io = { version = "0.7.1", features = [] }
+embedded-io-async = { version = "0.7.0", features = [] }
+embedded-storage = "0.3.1"
+jiff = { version = "0.2.24", default-features = false, features = [
   "logging",
   "static",
   "static-tz",
   "perf-inline",
 ] }
-chrono = { version = "0.4", default-features = false, features = ["alloc"] }
+chrono = { version = "0.4.44", default-features = false, features = ["alloc"] }
 
-serde_json = { version = "1.0", default-features = false, features = [] }
-sntpc = { version = "0.7", default-features = false, features = [
-  "embassy-socket",
-  "embassy-socket-ipv6",
+serde_json = { version = "1.0.149", default-features = false, features = [] }
+sntpc = { version = "0.9.0", default-features = false, features = [] }
+sntpc-net-embassy = { version = "0.9.0", default-features = false, features = [
 ] }
-static_cell = { version = "2.1", features = ["nightly"] }
-tinygif = "0.0"
-heapless = "0.8" # smoltcp holds this back
-tickv = "2.0"
-anyhow = { version = "1.0", default-features = false }
-nourl = "0.1"
-itertools = { version = "0.14", default-features = false, features = [] }
-num_enum = { version = "0.7", default-features = false }
-xtensa-lx = { version = "0.13", default-features = false, optional = true }
-ds323x = { version = "0.7", optional = true }
-arraydeque = { version = "0.5", optional = true }
-
+static_cell = { version = "2.1.1", features = ["nightly"] }
+tinygif = "0.0.4"
+heapless = "0.9.2" # smoltcp holds this back
+tickv = "2.0.0"
+anyhow = { version = "1.0.102", default-features = false }
+nourl = "0.1.4"
+itertools = { version = "0.14.0", default-features = false, features = [] }
+num_enum = { version = "0.7.6", default-features = false }
+xtensa-lx = { version = "0.13.0", default-features = false, optional = true }
+ds323x = { version = "0.7.0", optional = true }
+arraydeque = { version = "0.5.1", optional = true }
+libm = { version = "0.2.16" }
 [dependencies.embassy-executor]
-version = "0.9"
+version = "0.9.1"
 
 ## ESP-HAL
 
 [dependencies.esp-hal]
-version = "1.0"
+version = "1.0.0"
 features = ["unstable"]
 
 [dependencies.esp-metadata-generated]
-version = "0.3"
+version = "0.4.0"
 
 [dependencies.esp-bootloader-esp-idf]
-version = "0.4"
+version = "0.4.0"
 
 [dependencies.esp-println]
 version = "0.16"
@@ -81,11 +79,11 @@ features = ["internal-heap-stats"]
 optional = true
 
 [dependencies.esp-storage]
-version = "0.8"
+version = "0.8.1"
 
 [dependencies.esp-radio]
 version = "0.17"
-features = ["esp-alloc", "smoltcp", "wifi", "unstable"]
+features = ["esp-alloc", "wifi", "unstable"]
 # git = "https://github.com/esp-rs/esp-radio"
 
 [dependencies.esp-hub75]
@@ -94,14 +92,14 @@ features = ["iram"]
 # path = "../../esp-hub75"
 
 [dependencies.hub75-framebuffer]
-version = "0.6"
+version = "0.6.0"
 features = ["esp-hal-dma"]
 
 [dependencies.esp-rom-sys]
-version = "0.1"
+version = "0.1.4"
 
 [dependencies.esp-rtos]
-version = "0.2"
+version = "0.2.0"
 features = ["embassy", "esp-radio", "esp-alloc"]
 
 # [dependencies.esp-mbedtls]
@@ -117,12 +115,12 @@ features = []
 optional = true
 
 [dependencies.nanofish]
-version = "0.9"
+version = "0.11.3"
 features = ["tls"]
 optional = true
 
 [dependencies.embedded-tls]
-version = "0.17"
+version = "0.18.0"
 default-features = false
 features = []            # "webpki"
 optional = true
@@ -134,7 +132,7 @@ features = ["ring"]
 optional = true
 
 [dependencies.smoltcp]
-version = "0.12"
+version = "0.13"
 default-features = false
 features = [
   "medium-ethernet",
@@ -142,13 +140,15 @@ features = [
   "proto-dhcpv4",
   "proto-dns",
   "proto-ipv4",
-  "proto-ipv6",
   "socket-dns",
   "socket-icmp",
   "socket-raw",
   "socket-tcp",
   "socket-udp",
 ]
+
+[dev-dependencies]
+embedded-graphics-simulator = "0.8.0"
 
 [profile.dev]
 opt-level = "s"
@@ -178,6 +178,13 @@ default = [
   # "dep:rustls-webpki",
   "watchdog",
   "rtcchip",
+  "ipv6",
+]
+
+ipv6 = [
+  "embassy-net/proto-ipv6",
+  "smoltcp/proto-ipv6",
+  "sntpc-net-embassy/ipv6",
 ]
 
 watchdog = []
@@ -229,10 +236,12 @@ defmt = [
   # "esp-mbedtls?/defmt",
   "esp-radio/defmt",
   "esp-storage/defmt",
+  "nanofish/defmt",
   "nourl/defmt",
   "reqwless?/defmt",
   "smoltcp/defmt",
   "sntpc/defmt",
+  "sntpc-net-embassy/defmt",
   "ds323x?/defmt",
 ]
 
@@ -258,6 +267,7 @@ log = [
   "reqwless?/log",
   "smoltcp/log",
   "sntpc/log",
+  "sntpc-net-embassy/log",
 ]
 
 # wiring scheme in source

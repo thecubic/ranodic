@@ -10,7 +10,7 @@ use embassy_sync::{
 use embassy_time::Timer;
 use embedded_graphics::{
     Drawable,
-    geometry::Point,
+    geometry::{Point, Size},
     image::ImageDrawable,
     mono_font::{
         MonoTextStyle,
@@ -19,7 +19,8 @@ use embedded_graphics::{
         // iso_8859_1::FONT_5X8,
     },
     pixelcolor::Rgb888,
-    prelude::RgbColor,
+    prelude::{Primitive, RgbColor},
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
     text::{Alignment, Text},
 };
 use esp_hub75::Color;
@@ -149,63 +150,26 @@ pub async fn display_painter(fb_inc: &'static mut FBType) {
             )
             .draw(fb)
             .expect("failed to draw text");
+
+            // 30,8 -> 30,17
+            // 46,8 -> 46,17
+            // let style = PrimitiveStyleBuilder::new()
+            //     .stroke_color(Rgb888::RED)
+            //     .stroke_width(1)
+            //     .fill_color(Rgb888::GREEN)
+            //     .build();
+            // Rectangle::new(Point::new(30, 8), Size::new(16, 9))
+            //     .into_styled(style)
+            //     .draw(fb)
+            //     .expect("couldn't draw graphrect");
         }
         if was_time_ever_synced && FORECASTS_PRESENT.load(Ordering::Relaxed) {
             // debug!("drawing, forecasts present");
             let forecasts = FORECASTS.lock().await;
-            let mut is_day = true;
             if let Some(forecast) = forecasts.get_forecast(&now) {
-                is_day = forecast.is_day;
-                Text::with_alignment(
-                    (forecast.temperature as u8).to_string().as_str(),
-                    TEMPPOINT,
-                    BIGFONT,
-                    Alignment::Left,
-                )
-                .draw(fb)
-                .expect("failed to draw text");
+                crate::weather::draw_forecast(now, &forecasts, forecast, fb);
             } else {
                 error!("no relevant forecast in cache");
-            }
-            if let Some(mintemp) = forecasts.day_or_night_min_temp(&now, is_day) {
-                Text::with_alignment(
-                    mintemp.to_string().as_str(),
-                    TEMP_LOW_POINT,
-                    DATEFONT,
-                    Alignment::Left,
-                )
-                .draw(fb)
-                .expect("failed to draw text");
-            }
-            if let Some(maxtemp) = forecasts.day_or_night_max_temp(&now, is_day) {
-                Text::with_alignment(
-                    maxtemp.to_string().as_str(),
-                    TEMP_HIGH_POINT,
-                    DATEFONT,
-                    Alignment::Left,
-                )
-                .draw(fb)
-                .expect("failed to draw text");
-            }
-            if let Some(mintemp) = forecasts.day_or_night_min_temp(&(&now + 12.hours()), !is_day) {
-                Text::with_alignment(
-                    mintemp.to_string().as_str(),
-                    NEXT_TEMP_LOW_POINT,
-                    DATEFONT,
-                    Alignment::Left,
-                )
-                .draw(fb)
-                .expect("failed to draw text");
-            }
-            if let Some(maxtemp) = forecasts.day_or_night_max_temp(&(&now + 12.hours()), !is_day) {
-                Text::with_alignment(
-                    maxtemp.to_string().as_str(),
-                    NEXT_TEMP_HIGH_POINT,
-                    DATEFONT,
-                    Alignment::Left,
-                )
-                .draw(fb)
-                .expect("failed to draw text");
             }
         }
 
@@ -247,6 +211,12 @@ const DATEFONT: ColorMonoTextStyle<'static> = MonoTextStyleBuilder::new()
 
 const DATEFONTB: ColorMonoTextStyle<'static> = MonoTextStyleBuilder::new()
     .font(&FONT_5X8)
+    .text_color(Color::WHITE)
+    .background_color(Color::BLACK)
+    .build();
+
+const DATEFONTC: ColorMonoTextStyle<'static> = MonoTextStyleBuilder::new()
+    .font(&FONT_4X6)
     .text_color(Color::WHITE)
     .background_color(Color::BLACK)
     .build();

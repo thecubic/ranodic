@@ -7,7 +7,9 @@ use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 
 use crate::{ntp::zgettimeofday, weather::FORECASTS_PRESENT};
 
-#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
+use embedded_graphics::pixelcolor::Rgb888;
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum WMOCode {
     ClearSky = 0,
@@ -38,6 +40,41 @@ pub enum WMOCode {
     LightThunderstorm = 95,
     ModerateHailThunderstorm = 96,
     HeavyHailThunderstorm = 99,
+}
+
+impl WMOCode {
+    /// Single printable ASCII character used as the weather icon.
+    ///
+    /// Chosen from FONT_5X8's printable set for visual resemblance:
+    /// `*` → sun-like,  `~` → cloud/mist,  `v` → rain,  `#` → snow/fog,
+    /// `!` → lightning.
+    pub const fn icon(self) -> char {
+        match self {
+            Self::ClearSky | Self::MainlyClear => '*',
+            Self::PartlyCloudy | Self::Overcast => '~',
+            Self::Fog => '#',
+            Self::LightDrizzle | Self::LightShowers | Self::HeavyRain => 'v',
+            Self::HeavyRain => 'V',
+            Self::LightSnow => '*',
+            Self::LightThunderstorm => '!',
+            _ => '?',
+        }
+    }
+
+    /// Accent colour for the icon.
+    pub const fn icon_color(self) -> Rgb888 {
+        match self {
+            Self::ClearSky | Self::MainlyClear => crate::weather::palette::SUN,
+            Self::PartlyCloudy | Self::Overcast => crate::weather::palette::CLOUD,
+            Self::Fog => crate::weather::palette::FOG,
+            Self::LightDrizzle | Self::LightShowers | Self::HeavyRain => {
+                crate::weather::palette::RAIN
+            }
+            Self::LightSnow => crate::weather::palette::SNOW,
+            Self::LightThunderstorm => crate::weather::palette::THUNDER,
+            _ => crate::weather::palette::WHITE,
+        }
+    }
 }
 
 #[cfg(feature = "defmt")]
@@ -224,6 +261,14 @@ impl WeatherForecastCache {
 
     pub fn position(&self, other: &WeatherForecast) -> Option<usize> {
         self.forecasts.iter().position(|forecast| forecast == other)
+    }
+
+    pub fn nextth(&self, other: &WeatherForecast, n: i8) -> Option<&WeatherForecast> {
+        if let Some(pos) = self.forecasts.iter().position(|forecast| forecast == other) {
+            self.forecasts.get(((pos as i8) + n) as usize)
+        } else {
+            None
+        }
     }
 
     pub fn upsert(&mut self, forecast: WeatherForecast) {

@@ -12,8 +12,8 @@ runner = "espflash flash --monitor --chip esp32s3 --log-format defmt -F full --p
 
 [env]
 # DEFMT_LOG = "info"
-DEFMT_LOG = "debug,esp_hal::dma=info,esp_hal=info,esp_radio=info,smoltcp=info,sntpc=info,embedded_tls=info"
-ESP_LOG = "debug,esp_hal::dma=info,esp_hal=info,esp_radio=info,smoltcp=info,sntpc=info,embedded_tls=info"
+DEFMT_LOG = "debug,esp_hal::dma=info,esp_hal=info,esp_radio=info,smoltcp=info,sntpc=info,embedded_tls=trace"
+ESP_LOG = "trace,esp_hal::dma=info,esp_hal=info,esp_radio=info,smoltcp=info,sntpc=info,embedded_tls=trace"
 # ESP_LOG = "debug,esp_hal::dma=info,esp_hal=info,esp_radio=info,smoltcp=trace,sntpc=info,embedded_tls=trace"
 # ESP_LOG = "info"
 MONITOR_BAUD = "115200"

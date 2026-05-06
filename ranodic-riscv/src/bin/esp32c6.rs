@@ -7,3 +7,5 @@
 
 #[allow(unused_imports)]
 use ranodic;
+
+// esp_bootloader_esp_idf::esp_app_desc!();
