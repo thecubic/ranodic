@@ -163,6 +163,7 @@ pub async fn main(spawner: embassy_executor::Spawner) {
         spawner.must_spawn(crate::nightscout::nightscout_query(stack));
         spawner.must_spawn(crate::weather::weather_query(stack));
     }
+    #[cfg(feature = "rtcchip")]
     spawner.must_spawn(crate::rtc::desync_failsafe());
 
     #[cfg(feature = "heapstats")]

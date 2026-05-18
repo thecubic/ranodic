@@ -168,16 +168,10 @@ overflow-checks = false
 
 [features]
 default = [
-  # "esp32c6",
-  # "esp32s3",
-  # "defmt",
-  "selfwire",
   "nanofish",
   "embedded-tls",
   "alloc",
-  # "dep:rustls-webpki",
   "watchdog",
-  "rtcchip",
   "ipv6",
 ]
 

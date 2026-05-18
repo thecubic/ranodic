@@ -91,6 +91,15 @@ impl<'d> DisplayPeripherals<'d> {
         }
     }
 
+    // R0 G0
+    // B0 GND
+    // R1 G1
+    // K B1 NC
+    // K A  B
+    // C  D
+    // CL LA
+    // OE GND
+
     #[cfg(feature = "esp32c6")]
     fn esp32c6_selfwire() -> Self {
         Self {

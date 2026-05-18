@@ -1,11 +1,11 @@
+use crate::log::{debug, error, info};
 use alloc::{format, string::ToString};
 use core::any::{type_name, type_name_of_val};
 use core::sync::atomic::{AtomicBool, AtomicU8};
-use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_6X12};
-
-use crate::log::{debug, error, info};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 use embassy_time::Timer;
+use embedded_graphics::mono_font::ascii::{FONT_6X10, FONT_6X12};
+use embedded_graphics::text::Alignment;
 
 use itertools::izip;
 use nanofish::HttpMethod;
@@ -30,7 +30,6 @@ const FORECAST_SUCCESS_INTERVAL: u64 = 3600;
 const FORECAST_FAILURE_INTERVAL: u64 = 60;
 
 static BUFFER_SZ: usize = 8192;
-// static BUFFER: Mutex<CriticalSectionRawMutex, [u8; BUFFER_SZ]> = Mutex::new([0u8; BUFFER_SZ]);
 
 pub static FORECASTS: Mutex<CriticalSectionRawMutex, WeatherForecastCache> =
     Mutex::new(WeatherForecastCache::new());
@@ -39,25 +38,9 @@ pub static FORECASTS_PRESENT: AtomicBool = AtomicBool::new(false);
 
 pub static QUICKTRIES: AtomicU8 = AtomicU8::new(3);
 
-// static OMETEO_URL: OnceLock<String> = OnceLock::new();
-
 #[embassy_executor::task]
 pub async fn weather_query(stack: embassy_net::Stack<'static>) {
     debug!("weather_query alive");
-    // let ometeo_url: Arc<String> = Arc::new(format!(
-    //     "https://api.open-meteo.com/v1/forecast?\
-    //     latitude={}&\
-    //     longitude={}&\
-    //     daily=sunrise,sunset,daylight_duration,sunshine_duration&\
-    //     hourly=temperature_2m,relative_humidity_2m,precipitation,precipitation_probability,weather_code,is_day,sunshine_duration&\
-    //     models=best_match&\
-    //     timezone=America%2FLos_Angeles&\
-    //     forecast_days=2&\
-    //     wind_speed_unit=mph&\
-    //     temperature_unit=fahrenheit&\
-    //     precipitation_unit=inch",
-    //     WEATHER_LATITUDE, WEATHER_LONGITUDE
-    // ));
     loop {
         stack.wait_config_up().await;
         debug!("weather_query: network stack up");
@@ -84,7 +67,7 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
     // debug!("url: {}", url);
     // let mut buffer = BUFFER.lock().await;
     let mut buffer = [0u8; BUFFER_SZ];
-    let _ = NET_REQUEST_QUEUE.lock().await;
+    // let _ = NET_REQUEST_QUEUE.lock().await;
     let result = crate::net::WorkingClient::new(&stack)
         .request(
             HttpMethod::GET,
@@ -124,10 +107,6 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
         return Err(anyhow::Error::msg(e));
     }
     let (response, bytes_read) = result.unwrap();
-    // (result, bytes_read)
-    // if result.is_
-    // let response =
-    // .map_err(anyhow::Error::msg)?;
     debug!("get_forecasts: bytes_read: {}", bytes_read);
     debug!(
         "get_forecasts: content length: {}",
@@ -137,9 +116,29 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
         "get_forecasts: response body length: {}",
         response.body.len()
     );
+    // BufRead
     if response.is_success() {
         if let ResponseBody::Text(jason) = response.body {
-            digest_body(jason).await
+            let mut onecopy = alloc::string::String::new();
+            // respbytes
+            let mut content = false;
+            let mut contentlen = 0usize;
+            for line in jason.lines() {
+                if !content {
+                    info!("addrline: {:?}", line);
+                    content = true;
+                    if let Ok(inclen) = usize::from_str_radix(line, 16) {
+                        contentlen = inclen;
+                    } else {
+                        return Err(anyhow!("get_forecasts: bad sublength: {}", line));
+                    }
+                } else {
+                    debug!("expecting {} bytes", contentlen);
+                    onecopy.push_str(line);
+                    content = false;
+                }
+            }
+            digest_body(&onecopy).await
         } else {
             error!("get_forecasts: unexpected response format");
             Err(anyhow!("get_forecasts: unexpected response format"))
@@ -161,52 +160,18 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
 }
 
 async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
-    for line in jason.lines() {
-        info!("jason line:[{}]", line);
-    }
     if let (Some(obrk), Some(cbrk)) = (jason.find('{'), jason.rfind('}')) {
-        match serde_json::from_str(&jason[obrk..cbrk]) {
-            Ok::<Value, _>(_jobj) => {
-                info!("digest_body: got JSON");
-            }
-            Err(e) => {
-                use alloc::string::ToString;
-                error!(
-                    "digest_body: couldn't deserialize JSON: {}",
-                    e.to_string().as_str()
-                );
-            }
-        }
-    } else {
-        error!("digest_body: hopeless; couldn't find brackets");
-    }
-
-    // hmm it appears to have the length as a first line in hex
-    let mut nline: bool = false;
-    'inputlines: for line in jason.lines() {
-        if !nline {
-            // skip the first line which is suspect
-            debug!(
-                "digest_body: skipping suspicious first line \"{}\"; next line",
-                line
-            );
-            nline = true;
-            continue;
-        }
-        debug!("subsequent line: {}", line);
-        match serde_json::from_str(line) {
+        match serde_json::from_str(&jason[obrk..cbrk + 1]) {
             Ok::<Value, _>(jobj) => {
+                info!("digest_body: got JSON");
                 let timezone = if let Some(timezone) = jobj["timezone"].as_str() {
+                    debug!("digest_body: data has timezone: {}", timezone);
                     timezone
                 } else {
                     // lots of stuff technically parses as JSON
-                    debug!(
-                        "digest_body: parsed JSON doesn't contain expected value; cur \"{}\"; next line",
-                        line
-                    );
-                    continue;
+                    return Err(anyhow!("digest_body: did not find expected format"));
                 };
-                debug!("digest_body: data has timezone: {}", timezone);
+                // this got out of hand
                 if let Some(hourly) = jobj["hourly"].as_object() {
                     if let (
                         Some(time),
@@ -238,7 +203,7 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
                             is_day,
                             sunshine_duration
                         ) {
-                            let forecast = if let (
+                            match if let (
                                 Some(time),
                                 Some(temperature),
                                 Some(relative_humidity),
@@ -282,33 +247,34 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
                                 );
                                 error!("digest_body: JSON parsing didn't work");
                                 return Err(anyhow!("JSON parsing didn't work"));
-                            };
-                            if forecast.is_ok() {
-                                FORECASTS.lock().await.upsert(forecast.unwrap());
-                                // debug!("digest_body: upserted forecast");
-                            } else {
-                                error!(
-                                    "digest_body: forecast bogus: {}",
-                                    forecast.unwrap_err().to_string()
-                                );
-                                continue 'inputlines;
+                            } {
+                                Ok(forecast) => {
+                                    FORECASTS.lock().await.upsert(forecast);
+                                }
+                                Err(e) => {
+                                    return Err(anyhow!(
+                                        "digest_body: forecast bogus: {}",
+                                        e.to_string()
+                                    ));
+                                }
                             }
                         }
-                        return Ok(());
                     }
                 }
             }
             Err(e) => {
                 use alloc::string::ToString;
-                error!(
-                    "digest_body: couldn't deserialize JSON: {}",
-                    e.to_string().as_str()
-                );
-                continue;
+                return Err(anyhow!(
+                    "digest_body: couldn't deserialize JSON: {} from [{}]",
+                    e.to_string().as_str(),
+                    &jason[obrk..cbrk + 1]
+                ));
             }
-        }
+        };
+        Ok(())
+    } else {
+        Err(anyhow!("digest_body: hopeless; couldn't find brackets"))
     }
-    Err(anyhow!("digest_body: never found data"))
 }
 
 use core::fmt::Write as _;
@@ -598,39 +564,39 @@ fn draw_row1<D: DrawTarget<Color = Rgb888>>(
     forecast: &WeatherForecast,
     target: &mut D,
 ) -> Result<(), D::Error> {
-    let y = REGION_TOP + ROW1_Y;
+    let y = REGION_TOP + ROW1_Y + CHAR_H;
 
     // humidity
     // let humid_text = format!("{:2}%",);
-    Text::with_baseline(
+    Text::with_alignment(
         &forecast.relative_humidity.min(99).to_string(),
-        Point::new(0, y),
+        Point::new(2 * CHAR_W - 2, y - 2),
         MonoTextStyle::new(&FONT_5X8, palette::HUMID),
-        Baseline::Top,
+        Alignment::Right,
     )
     .draw(target)?;
-    Text::with_baseline(
+    Text::with_alignment(
         &"%",
-        Point::new(2 * CHAR_W - 2, y),
+        Point::new(3 * CHAR_W - 2, y - 1),
         MonoTextStyle::new(&FONT_6X10, palette::HUMID),
-        Baseline::Top,
+        Alignment::Right,
     )
     .draw(target)?;
 
     // precipitation
     // let precip_text = format!("{:2}%", forecast.precipitation_probability.min(99));
-    Text::with_baseline(
+    Text::with_alignment(
         &forecast.precipitation_probability.min(99).to_string(),
-        Point::new(3 * CHAR_W, y),
+        Point::new(5 * CHAR_W - 2, y - 2),
         MonoTextStyle::new(&FONT_5X8, palette::PRECIP),
-        Baseline::Top,
+        Alignment::Right,
     )
     .draw(target)?;
-    Text::with_baseline(
+    Text::with_alignment(
         &"%",
-        Point::new(4 * CHAR_W, y),
+        Point::new(6 * CHAR_W - 2, y - 1),
         MonoTextStyle::new(&FONT_6X10, palette::PRECIP),
-        Baseline::Top,
+        Alignment::Right,
     )
     .draw(target)?;
 
