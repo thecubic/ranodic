@@ -29,7 +29,7 @@ pub const WEATHER_LONGITUDE: &str = env!("WEATHER_LONGITUDE");
 const FORECAST_SUCCESS_INTERVAL: u64 = 3600;
 const FORECAST_FAILURE_INTERVAL: u64 = 60;
 
-static BUFFER_SZ: usize = 8192;
+const BUFFER_SZ: usize = 8192;
 
 pub static FORECASTS: Mutex<CriticalSectionRawMutex, WeatherForecastCache> =
     Mutex::new(WeatherForecastCache::new());

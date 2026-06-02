@@ -77,12 +77,10 @@ pub async fn main(spawner: embassy_executor::Spawner) {
     let hp_executor = {
         let software_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
         let timg0 = TimerGroup::new(peripherals.TIMG0);
-        esp_rtos::start(
-            timg0.timer0,
-            // #[cfg(target_arch = "riscv32")]
-            #[cfg(feature = "esp32c6")]
-            software_interrupt.software_interrupt0,
-        );
+        #[cfg(not(feature = "esp32c6"))]
+        esp_rtos::start(timg0.timer0);
+        #[cfg(feature = "esp32c6")]
+        esp_rtos::start(timg0.timer0, software_interrupt.software_interrupt0);
         HIPRI_EXECUTOR.init_with(|| {
             InterruptExecutor::<HIPRI_CORE>::new(software_interrupt.software_interrupt2)
         })
