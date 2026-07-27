@@ -20,6 +20,7 @@ fn main() {
         println!("cargo:rustc-cfg=esp32c6");
     }
     linker_be_nice();
+    #[cfg(feature = "defmt")]
     println!("cargo:rustc-link-arg=-Tdefmt.x");
     println!("cargo:rustc-link-arg=-Tlinkall.x");
 }

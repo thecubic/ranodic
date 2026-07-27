@@ -107,13 +107,13 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
         return Err(anyhow::Error::msg(e));
     }
     let (response, bytes_read) = result.unwrap();
-    debug!("get_forecasts: bytes_read: {}", bytes_read);
+    debug!("get_forecasts: bytes_read: {:#?}", bytes_read);
     debug!(
-        "get_forecasts: content length: {}",
+        "get_forecasts: content length: {:#?}",
         response.content_length()
     );
     debug!(
-        "get_forecasts: response body length: {}",
+        "get_forecasts: response body length: {:#?}",
         response.body.len()
     );
     // BufRead
@@ -130,7 +130,7 @@ async fn get_forecasts(stack: embassy_net::Stack<'static>) -> anyhow::Result<()>
                     if let Ok(inclen) = usize::from_str_radix(line, 16) {
                         contentlen = inclen;
                     } else {
-                        return Err(anyhow!("get_forecasts: bad sublength: {}", line));
+                        return Err(anyhow!("get_forecasts: bad sublength: {:#?}", line));
                     }
                 } else {
                     debug!("expecting {} bytes", contentlen);
@@ -235,7 +235,7 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
                                 )
                             } else {
                                 debug!(
-                                    "0:{}, 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{}, 7:{}",
+                                    "0:{:#?}, 1:{:#?}, 2:{:#?}, 3:{:#?}, 4:{:#?}, 5:{:#?}, 6:{:#?}, 7:{:#?}",
                                     pivot.0.as_str(),
                                     pivot.1.as_f64(),
                                     pivot.2.as_u64(),
@@ -253,7 +253,7 @@ async fn digest_body(jason: &str) -> Result<(), anyhow::Error> {
                                 }
                                 Err(e) => {
                                     return Err(anyhow!(
-                                        "digest_body: forecast bogus: {}",
+                                        "digest_body: forecast bogus: {:#?}",
                                         e.to_string()
                                     ));
                                 }

@@ -113,7 +113,7 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
         let addrs = match stack.dns_query(NTP_SERVER, DnsQueryType::A).await {
             Ok(e) => {
                 if e.is_empty() {
-                    error!("ntp_sync: empty addresses for {}", NTP_SERVER);
+                    error!("ntp_sync: empty addresses for {:#?}", NTP_SERVER);
                     #[cfg(feature = "rtcchip")]
                     let _ = crate::rtc::ic_to_sys().await;
                     Timer::after_secs(NTP_INTERVAL / 10).await;
@@ -122,7 +122,7 @@ pub async fn ntp_sync(stack: embassy_net::Stack<'static>) {
                 e
             }
             Err(e) => {
-                error!("ntp_sync: DNS error: {}", e);
+                error!("ntp_sync: DNS error: {:#?}", e);
                 #[cfg(feature = "rtcchip")]
                 let _ = crate::rtc::ic_to_sys().await;
                 Timer::after_secs(NTP_INTERVAL / 10).await;
@@ -183,7 +183,7 @@ where
             let saddr = SocketAddr::from((*addr, 123));
             let req_result = sntp_send_request(saddr, socket, context).await;
             if req_result.is_err() {
-                error!("sntp_send_request: {}", req_result.unwrap_err());
+                error!("sntp_send_request: {:#?}", req_result.unwrap_err());
                 Timer::after_secs(retry).await;
                 continue;
             }
@@ -199,10 +199,10 @@ where
                     return Ok(ntpr);
                 }
                 Err(toerr) => {
-                    error!("get_time: attempt timeout {}", toerr);
+                    error!("get_time: attempt timeout {:#?}", toerr);
                 }
                 Ok(Err(oerr)) => {
-                    error!("get_time: other error {}", oerr);
+                    error!("get_time: other error {:#?}", oerr);
                 }
             }
         }

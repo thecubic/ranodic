@@ -22,7 +22,7 @@ pub fn rtcread() -> Result<NaiveDateTime> {
             info!("rtcread: RTC enabled");
         }
         Err(e) => {
-            error!("rtcread: RTC enable error {}", e);
+            error!("rtcread: RTC enable error {:#?}", e);
         }
     };
     match rtcic.datetime() {
