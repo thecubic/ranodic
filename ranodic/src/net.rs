@@ -19,7 +19,7 @@ pub const DEFAULT_PASSWORD: &str = "flowers by irene";
 pub type WorkingClient<'a> = HttpClient<'a, 4096, 4096, 16640, 4096, 4096>;
 
 #[cfg(feature = "esp32")]
-pub type WorkingClient<'a> = HttpClient<'a, 2048, 2048, 4096, 2048, 2048>;
+pub type WorkingClient<'a> = HttpClient<'a, 2048, 2048, 8192, 2048, 2048>;
 
 pub static NET_REQUEST_QUEUE: Mutex<CriticalSectionRawMutex, ()> = Mutex::new(());
 
