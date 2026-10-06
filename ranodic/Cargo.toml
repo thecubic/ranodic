@@ -1,7 +1,7 @@
 [package]
 edition = "2024"
 name = "ranodic"
-version = "0.8.2"
+version = "0.8.3"
 autobins = false
 autoexamples = false
 autotests = false
@@ -272,8 +272,9 @@ log = [
   "sntpc-net-embassy/log",
 ]
 
-# wiring scheme in source
+# wiring schemes in source
 selfwire = []
+xiaozhi = []
 
 # tidbyt
 tidbyt = ["esp32"]

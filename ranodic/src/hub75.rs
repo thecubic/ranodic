@@ -61,6 +61,9 @@ impl<'d> Default for DisplayPeripherals<'d> {
         #[cfg(all(feature = "esp32s3", feature = "selfwire"))]
         return DisplayPeripherals::esp32s3_selfwire();
 
+        #[cfg(all(feature = "esp32s3", feature = "xiaozhi"))]
+        return DisplayPeripherals::esp32s3_xiaozhi();
+
         #[cfg(all(feature = "esp32", feature = "tidbyt"))]
         return DisplayPeripherals::esp32_tidbyt();
     }
@@ -141,6 +144,51 @@ impl<'d> DisplayPeripherals<'d> {
             // latch: unsafe { GPIO10::steal().into() },
             clock: unsafe { GPIO13::steal().into() },
             latch: unsafe { GPIO12::steal().into() },
+        }
+    }
+
+    #[cfg(all(feature = "esp32s3", feature = "xiaozhi"))]
+    fn esp32s3_xiaozhi() -> Self {
+        Self {
+            lcd_cam: unsafe { LCD_CAM::steal().into() },
+            dma_channel: unsafe { DMA_CH0::steal() },
+
+            #[cfg(not(feature = "whack"))]
+            grn2: unsafe { GPIO7::steal().into() },
+            #[cfg(not(feature = "whack"))]
+            red1: unsafe { GPIO5::steal().into() },
+            #[cfg(not(feature = "whack"))]
+            blu1: unsafe { GPIO6::steal().into() },
+            #[cfg(not(feature = "whack"))]
+            grn1: unsafe { GPIO4::steal().into() },
+            #[cfg(not(feature = "whack"))]
+            red2: unsafe { GPIO15::steal().into() },
+            #[cfg(not(feature = "whack"))]
+            blu2: unsafe { GPIO17::steal().into() },
+
+            #[cfg(feature = "whack")]
+            blu2: unsafe { GPIO7::steal().into() },
+            #[cfg(feature = "whack")]
+            red1: unsafe { GPIO5::steal().into() },
+            #[cfg(feature = "whack")]
+            grn1: unsafe { GPIO6::steal().into() },
+            #[cfg(feature = "whack")]
+            blu1: unsafe { GPIO4::steal().into() },
+            #[cfg(feature = "whack")]
+            red2: unsafe { GPIO15::steal().into() },
+            #[cfg(feature = "whack")]
+            grn2: unsafe { GPIO17::steal().into() },
+
+            addr0: unsafe { GPIO8::steal().into() },
+            addr1: unsafe { GPIO18::steal().into() },
+            addr2: unsafe { GPIO10::steal().into() },
+            addr3: unsafe { GPIO9::steal().into() },
+            addr4: unsafe { GPIO16::steal().into() },
+            blank: unsafe { GPIO13::steal().into() },
+            // clock: unsafe { GPIO11::steal().into() },
+            // latch: unsafe { GPIO10::steal().into() },
+            clock: unsafe { GPIO12::steal().into() },
+            latch: unsafe { GPIO11::steal().into() },
         }
     }
 

@@ -10,7 +10,7 @@ autobenches = false
 [[bin]]
 name = "ranodic-esp32s3"
 path = "./src/bin/esp32s3.rs"
-required-features = ["esp32s3", "selfwire"]
+required-features = ["esp32s3"]
 
 [dependencies]
 
@@ -19,9 +19,10 @@ path = "../ranodic"
 features = []
 
 [features]
-default = ["esp32s3", "selfwire", "defmt", "alloc"]
+default = ["esp32s3", "defmt", "alloc"]
 esp32s3 = ["ranodic/esp32s3"]
 selfwire = ["ranodic/selfwire"]
+xiaozhi = ["ranodic/xiaozhi"]
 defmt = ["ranodic/defmt"]
 alloc = ["ranodic/alloc"]
 whack = ["ranodic/whack"]
